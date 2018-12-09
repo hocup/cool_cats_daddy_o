@@ -9,10 +9,18 @@ type alias Model =
     { on: Bool
     , showList: Bool
     , filterPairs: List (String, String)
+    , newFrom: String
+    , newTo: String
     }
 
 init =
-    { on = False, showList = False, filterPairs = [("What", "WHAT!!!"), ("Why", "WHY?!?!")] }
+    { 
+        on = False, 
+        showList = False, 
+        filterPairs = [], 
+        newFrom = "", 
+        newTo = "" 
+    }
 
 
 filterText : Model -> String -> String
@@ -36,8 +44,8 @@ filterText model text =
         text
 
 -- UPDATE
-type Msg = ToggleEnabled Bool | AddFilterPair (String, String)
-    | ToggleShowList
+type Msg = ToggleEnabled Bool | AddFilterPair
+    | ToggleShowList | SetFrom String | SetTo String | RemoveFilterPair (String, String)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -46,9 +54,23 @@ update msg model =
             ({model | showList = not model.showList}, Cmd.none)
         ToggleEnabled checked ->
             ({model | on = checked}, Cmd.none)
-        AddFilterPair pair ->
-            (model, Cmd.none)
-        
+        AddFilterPair ->
+            if String.length model.newTo > 0 && String.length model.newFrom > 0 then
+                ({model | filterPairs = model.filterPairs ++ [(model.newFrom, model.newTo)], newTo = "", newFrom = "" }, Cmd.none)
+            else
+                (model, Cmd.none)
+        SetFrom from -> 
+            ({model | newFrom = from}, Cmd.none)
+        SetTo to -> 
+            ({model | newTo = to}, Cmd.none)
+        RemoveFilterPair (pA, pB) ->
+            let 
+                pairNotEql : ( String, String ) -> Bool
+                pairNotEql (pC, pD) =
+                    (not (pA == pC)) && (not (pB == pD))
+            in 
+                ({model | filterPairs = List.filter pairNotEql model.filterPairs }, Cmd.none)
+
 
 -- VIEW
 getView : Model -> Html Msg
@@ -59,7 +81,13 @@ getView model =
         ,if model.showList then
             div [] [
                 button [onClick ToggleShowList] [text "Hide List"],
-                div [] (List.map getWordPairView model.filterPairs)
+                div [] (List.map getWordPairView model.filterPairs),
+                div [] [
+                    input [onInput SetFrom, value model.newFrom] [],
+                    text " -> ",
+                    input [onInput SetTo, value model.newTo] [],
+                    button [onClick AddFilterPair] [text "Add"]
+                ]
             ]
         else 
             div [][
@@ -69,4 +97,4 @@ getView model =
 
 getWordPairView : (String, String) -> Html Msg
 getWordPairView (strA, strB) =
-    div [] [text strA, text " -> " ,text strB]
+    div [] [text strA, text " -> " ,text strB, button [onClick (RemoveFilterPair (strA, strB))] [text "🗑"]]
