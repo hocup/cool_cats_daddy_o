@@ -6,6 +6,7 @@ import List exposing (map)
 import Http
 import Random exposing (..)
 import Joke exposing (..)
+import Filter exposing (..)
 
 main : Program () Model Msg
 main =
@@ -29,25 +30,30 @@ type alias Model =
   , jokes : List Joke
   , jokesByWordCount : List Joke
   , sortType : SortOrder
+  , filter : Filter.Model
   }
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  (Model 0 [] [] None, getPage)
+  (Model 0 [] [] None Filter.init, getPage)
 
 
 getJokesList : Model -> List Joke
 getJokesList model = 
-  case model.sortType of
-    None ->
-      model.jokes
-    Asc ->
-      model.jokesByWordCount
-    Desc ->
-      List.reverse model.jokesByWordCount
+  let 
+    applyFilter = (\ joke -> {joke | message = (Filter.filterText model.filter joke.message) })
+  in
+    case model.sortType of
+      None ->
+        List.map applyFilter model.jokes
+      Asc ->
+        List.map applyFilter model.jokesByWordCount
+      Desc ->
+        List.map applyFilter (List.reverse model.jokesByWordCount)
+
 -- UPDATE
 
-type Msg = ReceiveJokes JokeReceiver 
+type Msg = FilterMsg Filter.Msg | ReceiveJokes JokeReceiver 
          | ReceivePage Int | SwapSort
 
 type SortOrder = None | Asc | Desc
@@ -74,6 +80,12 @@ update msg model =
           ({model | sortType = Desc}, Cmd.none)
         Desc ->
           ({model | sortType = None}, Cmd.none)
+    FilterMsg subMsg ->
+      let
+        (updatedFilterModel, filterCmd) =
+          Filter.update subMsg model.filter
+      in
+        ({ model | filter = updatedFilterModel }, Cmd.map FilterMsg filterCmd)
 
 -- VIEW
 itemStyle : List (Html.Attribute msg)
@@ -98,7 +110,7 @@ view : Model -> Html Msg
 view model =
   div [] [
     div itemStyle [
-      div [style "display" "inline-block"] [text "future home of the filter stuff"],
+      div [style "display" "inline-block"] [Html.map FilterMsg (Filter.getView model.filter)],
       div [style "float" "right", style "display" "inline-block"] [
         button [ onClick SwapSort] [text (getSortButtonText model)]
       ]
