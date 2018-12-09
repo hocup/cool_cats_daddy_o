@@ -45,7 +45,8 @@ filterText model text =
 
 -- UPDATE
 type Msg = ToggleEnabled Bool | AddFilterPair
-    | ToggleShowList | SetFrom String | SetTo String | RemoveFilterPair (String, String)
+    | ToggleShowList | SetFrom String 
+    | SetTo String | RemoveFilterPair (String, String)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =

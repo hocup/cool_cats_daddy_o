@@ -109,7 +109,7 @@ renderJoke joke =
 view : Model -> Html Msg
 view model =
   div [] [
-    div itemStyle [
+    div [style "margin" "1vw"] [
       div [style "display" "inline-block"] [Html.map FilterMsg (Filter.getView model.filter)],
       div [style "float" "right", style "display" "inline-block"] [
         button [ onClick SwapSort] [text (getSortButtonText model)]
