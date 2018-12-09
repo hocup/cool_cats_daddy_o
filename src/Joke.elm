@@ -1,12 +1,15 @@
 module Joke exposing (..)
 
 import Http
+import Regex
 import Json.Decode exposing (..)
+
 
 type alias Joke = 
   { avatarUrl : String
   , id : String
   , message : String
+  , wordCount : Int
   }
 
 totalCatImages : number
@@ -27,8 +30,17 @@ buildJoke : String -> String -> Joke
 buildJoke id joke =
   { avatarUrl = (imageFromMessage joke), 
     id = id,
-    message = joke
+    message = joke,
+    wordCount =  wordCount joke
   }
+
+wordCount : String -> Int
+wordCount message = 
+  let
+    wordMatchPattern = Maybe.withDefault Regex.never <| Regex.fromString "(\\w+)"
+  in
+    List.length (Regex.find wordMatchPattern message)
+
 
 jokeDecoder : Decoder (Joke)
 jokeDecoder = Json.Decode.map2 (buildJoke) (field "id" string) (field "joke" string)

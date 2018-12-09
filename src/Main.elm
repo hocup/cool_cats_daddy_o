@@ -63,12 +63,20 @@ renderJoke joke =
   ] [
     img (itemStyle ++ [src joke.avatarUrl, width 50, height 50]) [text(joke.avatarUrl)],
     div (itemStyle ++ [style "font-style" "italic"]) [text(joke.id)],
-    div (itemStyle ++ [style "font-weight" "bold"]) [text(joke.message)]
+    div (itemStyle ++ [style "font-weight" "bold"]) [text(joke.message)],
+    div (itemStyle ++ [style "font-style" "italic", style "float" "right"]) [ text("(" ++ (String.fromInt joke.wordCount) ++ " words)")]
   ]
 
 view : Model -> Html Msg
 view model =
-  div [] (List.map renderJoke model.jokes)
+  div [] [
+    div itemStyle [
+      div [style "display" "inline-block"] [text "future home of the filter stuff"],
+      div [style "float" "right", style "display" "inline-block"] [text "future home of the sort btn"]
+    ],
+    div [] (List.map renderJoke model.jokes)
+  ]
+  
 
 getPage : Cmd Msg
 getPage =
