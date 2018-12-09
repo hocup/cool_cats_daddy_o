@@ -1,6 +1,7 @@
 import Html exposing (Html, button, div, img, text)
 import Browser
 import Html.Attributes exposing(..)
+import Html.Events exposing (onClick)
 import List exposing (map)
 import Http
 import Random exposing (..)
@@ -26,27 +27,53 @@ subscriptions model =
 type alias Model = 
   { page : Int
   , jokes : List Joke
+  , jokesByWordCount : List Joke
+  , sortType : SortOrder
   }
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  (Model 0 [], getPage)
+  (Model 0 [] [] None, getPage)
 
+
+getJokesList : Model -> List Joke
+getJokesList model = 
+  case model.sortType of
+    None ->
+      model.jokes
+    Asc ->
+      model.jokesByWordCount
+    Desc ->
+      List.reverse model.jokesByWordCount
 -- UPDATE
 
 type Msg = ReceiveJokes JokeReceiver 
-         | ReceivePage Int
+         | ReceivePage Int | SwapSort
+
+type SortOrder = None | Asc | Desc
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     ReceiveJokes (Ok newJokes) ->
-      ({ model | jokes = List.concat [newJokes, model.jokes] }, Cmd.none)
+      let 
+        newList = List.concat [newJokes, model.jokes]
+        newListSorted = List.sortBy .wordCount newList
+      in
+        ({ model | jokes = newList, jokesByWordCount = newListSorted}, Cmd.none)
     ReceiveJokes (Err _) ->
       (model, Cmd.none)
     ReceivePage page ->
       let updatedModel = { model | page = page } 
       in (updatedModel, getJokes page)
+    SwapSort ->
+      case model.sortType of
+        None ->
+          ({model | sortType = Asc}, Cmd.none)
+        Asc -> 
+          ({model | sortType = Desc}, Cmd.none)
+        Desc ->
+          ({model | sortType = None}, Cmd.none)
 
 -- VIEW
 itemStyle : List (Html.Attribute msg)
@@ -72,11 +99,23 @@ view model =
   div [] [
     div itemStyle [
       div [style "display" "inline-block"] [text "future home of the filter stuff"],
-      div [style "float" "right", style "display" "inline-block"] [text "future home of the sort btn"]
+      div [style "float" "right", style "display" "inline-block"] [
+        button [ onClick SwapSort] [text (getSortButtonText model)]
+      ]
     ],
-    div [] (List.map renderJoke model.jokes)
+    div [] (List.map renderJoke (getJokesList model))
   ]
   
+
+getSortButtonText : Model -> String
+getSortButtonText model = 
+  case model.sortType of
+    None ->
+      "Sort By Word Count: None"
+    Asc -> 
+      "Sort By Word Count: Ascending"
+    Desc ->
+      "Sort By Word Count: Descending"
 
 getPage : Cmd Msg
 getPage =
